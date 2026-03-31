@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Lógica de Asistencia Teamlyx</title>
+</head>
+<body>
+
+    <h1>Panel de Control - Extracción de Datos</h1>
+
+    <fieldset>
+        <legend>Filtros de Búsqueda</legend>
+
+        <label>
+            <input type="checkbox" id="chkEntradas" value="75"> Solo Entradas (75)
+        </label>
+        <br>
+        <label>
+            <input type="checkbox" id="chkSalidas" value="76"> Solo Salidas (76)
+        </label>
+        <br><br>
+        <label>ID Empleado: </label>
+        <input type="text" id="txtEmpleado" placeholder="Ej: 101">
+
+        <br><br>
+        <button id="btnCargar" style="padding: 10px 20px; cursor: pointer;">
+            PROCESAR Y MOSTRAR DATOS
+        </button>
+    </fieldset>
+
+    <br>
+
+    <table border="1" style="width: 100%; text-align: left; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: #eee;">
+                <th>ID Empleado</th>
+                <th>Fecha y Hora</th>
+                <th>Evento (Código)</th>
+            </tr>
+        </thead>
+        <tbody id="listaAsistencia">
+            <tr>
+                <td colspan="3" style="text-align: center; color: gray;">
+                    Presiona el botón para cargar la información...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
