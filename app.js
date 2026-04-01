@@ -13,6 +13,7 @@ const filtrosActivos = { [EVENTO_ENTRADA]: true, [EVENTO_SALIDA]: true };
 const checkboxFiltros = {
     ocultarSinNombre : true,
     ocultarSinId     : true,
+    dedupEntradas    : true,   // solo primera entrada por empleado/día
 };
 let pollingInterval  = null;
 
@@ -139,6 +140,10 @@ function initEventListeners() {
         checkboxFiltros.ocultarSinId = e.target.checked;
         paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
     });
+    document.getElementById('chkDedupEntradas').addEventListener('change', e => {
+        checkboxFiltros.dedupEntradas = e.target.checked;
+        paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
+    });
 
     // Búsqueda en tiempo real
     const txtEmp = document.getElementById('txtEmpleado');
@@ -239,8 +244,8 @@ function obtenerEventosFiltrados() {
     const horaDesde = document.getElementById('txtHoraDesde').value;
     const horaHasta = document.getElementById('txtHoraHasta').value;
 
-    return eventosActuales.filter(ev => {
-        // ── Filtros de calidad de datos ──
+    let filtrados = eventosActuales.filter(ev => {
+        // ── Calidad de datos ──
         const id     = (ev.employeeNoString || '').trim();
         const nombre = (ev.name || '').trim();
         if (checkboxFiltros.ocultarSinId     && (!id     || id     === 'null')) return false;
@@ -249,7 +254,7 @@ function obtenerEventosFiltrados() {
         // ── Tipo de evento ──
         if (!filtrosActivos[ev.minor]) return false;
 
-        // ── Búsqueda de texto (cualquier parte del nombre o ID) ──
+        // ── Búsqueda de texto ──
         if (busq) {
             const hayId     = id.toLowerCase().includes(busq);
             const hayNombre = nombre.toLowerCase().includes(busq);
@@ -265,6 +270,27 @@ function obtenerEventosFiltrados() {
 
         return true;
     });
+
+    // ── Dedup entradas: solo la más temprana por empleado/día ──
+    if (checkboxFiltros.dedupEntradas) {
+        // Primer paso: encontrar el time mínimo por (empleado + día)
+        const minEntrada = {};
+        for (const ev of filtrados) {
+            if (ev.minor !== EVENTO_ENTRADA) continue;
+            const key = `${ev.employeeNoString}|${ev.time.substring(0, 10)}`;
+            if (!minEntrada[key] || ev.time < minEntrada[key]) {
+                minEntrada[key] = ev.time;
+            }
+        }
+        // Segundo paso: descartar entradas duplicadas
+        filtrados = filtrados.filter(ev => {
+            if (ev.minor !== EVENTO_ENTRADA) return true;
+            const key = `${ev.employeeNoString}|${ev.time.substring(0, 10)}`;
+            return ev.time === minEntrada[key];
+        });
+    }
+
+    return filtrados;
 }
 
 function ordenarEventos(eventos) {
