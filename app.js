@@ -3,13 +3,17 @@
 // =====================================================
 
 // ── Estado global ──────────────────────────────────
-let eventosActuales = [];
-let paginaActual    = 1;
+let eventosActuales  = [];
+let paginaActual     = 1;
 let eventosPorPagina = 50;
-let columnaOrden    = 'fecha';
-let ordenAsc        = false;
-let vistaActual     = 'eventos';
+let columnaOrden     = 'fecha';
+let ordenAsc         = false;
+let vistaActual      = 'eventos';
 const filtrosActivos = { [EVENTO_ENTRADA]: true, [EVENTO_SALIDA]: true };
+const checkboxFiltros = {
+    ocultarSinNombre : true,
+    ocultarSinId     : true,
+};
 let pollingInterval  = null;
 
 // ── Boot ───────────────────────────────────────────
@@ -116,15 +120,23 @@ function initEventListeners() {
     // Exportar CSV
     document.getElementById('btnExportar').addEventListener('click', exportarCSV);
 
-    // Tipo toggles
-    document.getElementById('btnEntradas').addEventListener('click', () => {
-        filtrosActivos[EVENTO_ENTRADA] = !filtrosActivos[EVENTO_ENTRADA];
-        document.getElementById('btnEntradas').classList.toggle('active', filtrosActivos[EVENTO_ENTRADA]);
+    // Checkboxes de tipo (Entradas / Salidas)
+    document.getElementById('chkEntradas').addEventListener('change', e => {
+        filtrosActivos[EVENTO_ENTRADA] = e.target.checked;
         paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
     });
-    document.getElementById('btnSalidas').addEventListener('click', () => {
-        filtrosActivos[EVENTO_SALIDA] = !filtrosActivos[EVENTO_SALIDA];
-        document.getElementById('btnSalidas').classList.toggle('active', filtrosActivos[EVENTO_SALIDA]);
+    document.getElementById('chkSalidas').addEventListener('change', e => {
+        filtrosActivos[EVENTO_SALIDA] = e.target.checked;
+        paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
+    });
+
+    // Checkboxes de calidad de datos
+    document.getElementById('chkOcultarSinNombre').addEventListener('change', e => {
+        checkboxFiltros.ocultarSinNombre = e.target.checked;
+        paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
+    });
+    document.getElementById('chkOcultarSinId').addEventListener('change', e => {
+        checkboxFiltros.ocultarSinId = e.target.checked;
         paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
     });
 
@@ -224,21 +236,33 @@ async function cargarAsistencia() {
 // ══════════════════════════════════════════════════
 function obtenerEventosFiltrados() {
     const busq      = document.getElementById('txtEmpleado').value.trim().toLowerCase();
-    const horaDesde = document.getElementById('txtHoraDesde').value; // "HH:MM"
+    const horaDesde = document.getElementById('txtHoraDesde').value;
     const horaHasta = document.getElementById('txtHoraHasta').value;
 
     return eventosActuales.filter(ev => {
+        // ── Filtros de calidad de datos ──
+        const id     = (ev.employeeNoString || '').trim();
+        const nombre = (ev.name || '').trim();
+        if (checkboxFiltros.ocultarSinId     && (!id     || id     === 'null')) return false;
+        if (checkboxFiltros.ocultarSinNombre && (!nombre || nombre === 'null')) return false;
+
+        // ── Tipo de evento ──
         if (!filtrosActivos[ev.minor]) return false;
+
+        // ── Búsqueda de texto (cualquier parte del nombre o ID) ──
         if (busq) {
-            const id     = ev.employeeNoString.toLowerCase();
-            const nombre = (ev.name || '').toLowerCase();
-            if (!id.includes(busq) && !nombre.includes(busq)) return false;
+            const hayId     = id.toLowerCase().includes(busq);
+            const hayNombre = nombre.toLowerCase().includes(busq);
+            if (!hayId && !hayNombre) return false;
         }
+
+        // ── Rango de hora ──
         if (horaDesde || horaHasta) {
             const h = extraerHora(ev.time);
             if (horaDesde && h < horaDesde) return false;
             if (horaHasta && h > horaHasta) return false;
         }
+
         return true;
     });
 }

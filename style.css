@@ -180,17 +180,45 @@ body {
 /* Sort controls */
 .sort-controls { display:flex; gap:8px; align-items:center; }
 
-/* Toggles */
-.toggle-group { display:flex; flex-direction:column; gap:4px; }
-.toggles { display:flex; gap:7px; }
-.toggle-btn {
-    display:flex; align-items:center; gap:6px; padding:7px 13px;
-    border-radius:999px; border:1px solid var(--border); background:var(--bg-2);
-    color:var(--text-muted); font-size:12px; font-weight:500; font-family:inherit; cursor:pointer; transition:var(--ease);
+/* Checkbox groups */
+.checkbox-group { display:flex; flex-direction:column; gap:4px; }
+.checkboxes { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+.chk-label {
+    display:flex; align-items:center; gap:7px;
+    cursor:pointer; font-size:12px; font-weight:500; color:var(--text-2);
+    user-select:none; transition:var(--ease);
 }
-.toggle-btn.active.toggle-btn--entry { border-color:var(--success-b); background:var(--success-bg); color:var(--success); }
-.toggle-btn.active.toggle-btn--exit  { border-color:var(--danger-b);  background:var(--danger-bg);  color:var(--danger);  }
-.toggle-dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+.chk-label:hover { color:var(--text); }
+
+/* Ocultar checkbox nativo */
+.chk-label input[type="checkbox"] { position:absolute; opacity:0; width:0; height:0; }
+
+/* Caja visual del checkbox */
+.chk-box {
+    width:16px; height:16px; border-radius:4px; flex-shrink:0;
+    border:1.5px solid var(--border-l); background:var(--bg-2);
+    transition:var(--ease); position:relative;
+}
+.chk-box::after {
+    content:''; position:absolute; top:2px; left:5px;
+    width:4px; height:8px; border:2px solid transparent;
+    border-top:none; border-left:none;
+    transform:rotate(45deg); transition:var(--ease);
+}
+.chk-label input:checked ~ .chk-box {
+    background:var(--accent); border-color:var(--accent);
+    box-shadow:0 0 0 2px var(--accent-glow);
+}
+.chk-label input:checked ~ .chk-box::after { border-color:#fff; }
+
+/* Colores por tipo */
+.chk-label--entry input:checked ~ .chk-box { background:var(--success); border-color:var(--success); box-shadow:0 0 0 2px var(--success-bg); }
+.chk-label--exit  input:checked ~ .chk-box { background:var(--danger);  border-color:var(--danger);  box-shadow:0 0 0 2px var(--danger-bg);  }
+
+.chk-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.chk-dot--entry { background:var(--success); }
+.chk-dot--exit  { background:var(--danger);  }
 
 /* Action buttons */
 .action-buttons { display:flex; gap:8px; }

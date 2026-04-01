@@ -111,17 +111,36 @@
                 </div>
             </div>
 
-            <!-- Fila 2: Tipo + Ordenamiento + Acciones -->
+            <!-- Fila 2: Checkboxes + Ordenamiento + Acciones -->
             <div class="filter-row filter-row--bottom">
-                <div class="toggle-group">
-                    <label class="filter-label">Tipo</label>
-                    <div class="toggles">
-                        <button class="toggle-btn toggle-btn--entry active" id="btnEntradas">
-                            <span class="toggle-dot"></span> Entradas
-                        </button>
-                        <button class="toggle-btn toggle-btn--exit active" id="btnSalidas">
-                            <span class="toggle-dot"></span> Salidas
-                        </button>
+                <div class="checkbox-group">
+                    <label class="filter-label">Mostrar</label>
+                    <div class="checkboxes">
+                        <label class="chk-label chk-label--entry">
+                            <input type="checkbox" id="chkEntradas" checked>
+                            <span class="chk-box"></span>
+                            <span class="chk-dot chk-dot--entry"></span> Entradas
+                        </label>
+                        <label class="chk-label chk-label--exit">
+                            <input type="checkbox" id="chkSalidas" checked>
+                            <span class="chk-box"></span>
+                            <span class="chk-dot chk-dot--exit"></span> Salidas
+                        </label>
+                    </div>
+                </div>
+                <div class="checkbox-group">
+                    <label class="filter-label">Datos</label>
+                    <div class="checkboxes">
+                        <label class="chk-label">
+                            <input type="checkbox" id="chkOcultarSinNombre" checked>
+                            <span class="chk-box"></span>
+                            Ocultar sin nombre
+                        </label>
+                        <label class="chk-label">
+                            <input type="checkbox" id="chkOcultarSinId" checked>
+                            <span class="chk-box"></span>
+                            Ocultar sin ID
+                        </label>
                     </div>
                 </div>
                 <div class="sort-controls">
