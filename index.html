@@ -2,52 +2,256 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Lógica de Asistencia Teamlyx</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Teamlyx — Panel de Asistencia avanzado con filtros, vistas y estadísticas en tiempo real">
+    <title>Teamlyx — Panel de Asistencia</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <h1>Panel de Control - Extracción de Datos</h1>
+<header class="header">
+    <div class="container">
+        <div class="header-inner">
+            <div class="brand">
+                <div class="brand-logo">T</div>
+                <div>
+                    <h1 class="brand-name">TEAMLYX</h1>
+                    <span class="brand-sub">Panel de Asistencia v3.0</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-status">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Iniciando...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
 
-    <fieldset>
-        <legend>Filtros de Búsqueda</legend>
+<main class="main">
+<div class="container">
 
-        <label>
-            <input type="checkbox" id="chkEntradas" value="75"> Solo Entradas (75)
-        </label>
-        <br>
-        <label>
-            <input type="checkbox" id="chkSalidas" value="76"> Solo Salidas (76)
-        </label>
-        <br><br>
-        <label>ID Empleado: </label>
-        <input type="text" id="txtEmpleado" placeholder="Ej: 101">
+    <!-- CACHE BANNER -->
+    <div class="cache-banner" id="cacheBanner" style="display:none">
+        <div class="spinner spinner--sm"></div>
+        <p>Descargando historial del mes en segundo plano <span class="cache-count"></span></p>
+        <span class="cache-sync"></span>
+    </div>
 
-        <br><br>
-        <button id="btnCargar" style="padding: 10px 20px; cursor: pointer;">
-            PROCESAR Y MOSTRAR DATOS
-        </button>
-    </fieldset>
+    <!-- STATS (4 tarjetas) -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div class="stat-info">
+                <span class="stat-label">Total Registros</span>
+                <span class="stat-value" id="statTotal">—</span>
+            </div>
+        </div>
+        <div class="stat-card stat-card--success">
+            <div class="stat-icon">🟢</div>
+            <div class="stat-info">
+                <span class="stat-label">Entradas</span>
+                <span class="stat-value" id="statEntradas">—</span>
+            </div>
+        </div>
+        <div class="stat-card stat-card--danger">
+            <div class="stat-icon">🔴</div>
+            <div class="stat-info">
+                <span class="stat-label">Salidas</span>
+                <span class="stat-value" id="statSalidas">—</span>
+            </div>
+        </div>
+        <div class="stat-card stat-card--purple">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+                <span class="stat-label">Empleados Únicos</span>
+                <span class="stat-value" id="statEmpleados">—</span>
+            </div>
+        </div>
+    </div>
 
-    <br>
+    <!-- FILTROS -->
+    <div class="filter-panel">
+        <div class="filter-header">
+            <p class="filter-title">🔍 Filtros de Búsqueda</p>
+            <div class="date-presets">
+                <button class="preset-btn" id="presetHoy"    data-preset="today">Hoy</button>
+                <button class="preset-btn" id="presetAyer"   data-preset="yesterday">Ayer</button>
+                <button class="preset-btn" id="presetSemana" data-preset="week">Esta semana</button>
+                <button class="preset-btn active" id="presetMes" data-preset="month">Este mes</button>
+            </div>
+        </div>
 
-    <table border="1" style="width: 100%; text-align: left; border-collapse: collapse;">
-        <thead>
-            <tr style="background-color: #eee;">
-                <th>ID Empleado</th>
-                <th>Fecha y Hora</th>
-                <th>Evento (Código)</th>
-            </tr>
-        </thead>
-        <tbody id="listaAsistencia">
-            <tr>
-                <td colspan="3" style="text-align: center; color: gray;">
-                    Presiona el botón para cargar la información...
-                </td>
-            </tr>
-        </tbody>
-    </table>
+        <div class="filter-body">
+            <!-- Fila 1: Fechas + Horas + Búsqueda -->
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label" for="txtDesde">Fecha inicio</label>
+                    <input type="date" id="txtDesde" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label" for="txtHasta">Fecha fin</label>
+                    <input type="date" id="txtHasta" class="filter-input">
+                </div>
+                <div class="filter-group filter-group--sm">
+                    <label class="filter-label" for="txtHoraDesde">Hora de</label>
+                    <input type="time" id="txtHoraDesde" class="filter-input">
+                </div>
+                <div class="filter-group filter-group--sm">
+                    <label class="filter-label" for="txtHoraHasta">Hora a</label>
+                    <input type="time" id="txtHoraHasta" class="filter-input">
+                </div>
+                <div class="filter-group filter-group--lg">
+                    <label class="filter-label" for="txtEmpleado">Buscar empleado</label>
+                    <div class="search-wrap">
+                        <input type="text" id="txtEmpleado" class="filter-input" placeholder="Nombre o ID…" autocomplete="off">
+                        <button class="search-clear" id="btnClearSearch" title="Limpiar">✕</button>
+                    </div>
+                </div>
+            </div>
 
-    <script src="app.js"></script>
+            <!-- Fila 2: Tipo + Ordenamiento + Acciones -->
+            <div class="filter-row filter-row--bottom">
+                <div class="toggle-group">
+                    <label class="filter-label">Tipo</label>
+                    <div class="toggles">
+                        <button class="toggle-btn toggle-btn--entry active" id="btnEntradas">
+                            <span class="toggle-dot"></span> Entradas
+                        </button>
+                        <button class="toggle-btn toggle-btn--exit active" id="btnSalidas">
+                            <span class="toggle-dot"></span> Salidas
+                        </button>
+                    </div>
+                </div>
+                <div class="sort-controls">
+                    <select id="selOrden" class="filter-select" title="Ordenar por">
+                        <option value="fecha-desc">⬇ Más reciente</option>
+                        <option value="fecha-asc">⬆ Más antiguo</option>
+                        <option value="nombre-asc">A→Z Nombre</option>
+                        <option value="nombre-desc">Z→A Nombre</option>
+                        <option value="empleado-asc">ID ↑</option>
+                        <option value="empleado-desc">ID ↓</option>
+                    </select>
+                    <select id="selPorPagina" class="filter-select" title="Registros por página">
+                        <option value="25">25 / pág</option>
+                        <option value="50" selected>50 / pág</option>
+                        <option value="100">100 / pág</option>
+                        <option value="0">Todos</option>
+                    </select>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn--primary" id="btnCargar">
+                        <span class="btn-icon">⚡</span> Cargar Asistencia
+                    </button>
+                    <button class="btn btn--secondary" id="btnExportar" disabled>
+                        <span class="btn-icon">📥</span> CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- RESULTADOS -->
+    <div class="results-section">
+
+        <!-- Tabs de vista -->
+        <div class="view-tabs">
+            <button class="tab-btn active" data-view="eventos">📋 Eventos</button>
+            <button class="tab-btn" data-view="resumen">👥 Por Empleado</button>
+            <button class="tab-btn" data-view="diario">📅 Vista Diaria</button>
+        </div>
+
+        <!-- Cabecera de resultados + paginación -->
+        <div class="results-header">
+            <span class="results-title" id="resultsTitle">Registros de Asistencia</span>
+            <div class="pagination-controls" id="paginationControls" style="display:none">
+                <button class="page-btn" id="btnPrevPage" disabled>‹</button>
+                <span class="page-info" id="pageInfo">1 / 1</span>
+                <button class="page-btn" id="btnNextPage" disabled>›</button>
+            </div>
+            <span class="results-count" id="resultsCount">0</span>
+        </div>
+
+        <!-- Vista: EVENTOS -->
+        <div id="view-eventos" class="view-panel">
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-col="empleado">ID <span class="sort-ind">↕</span></th>
+                            <th class="sortable" data-col="nombre">Nombre <span class="sort-ind">↕</span></th>
+                            <th class="sortable" data-col="fecha">Fecha <span class="sort-ind">↓</span></th>
+                            <th>Hora</th>
+                            <th class="sortable" data-col="tipo">Tipo <span class="sort-ind">↕</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaAsistencia">
+                        <tr class="empty-state"><td colspan="5">
+                            <div class="empty-inner">
+                                <div class="state-icon">📂</div>
+                                <p>Selecciona un rango y presiona <strong>Cargar Asistencia</strong></p>
+                            </div>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Vista: RESUMEN POR EMPLEADO -->
+        <div id="view-resumen" class="view-panel" style="display:none">
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th class="text-center">Días presente</th>
+                            <th class="text-center">Entradas</th>
+                            <th class="text-center">Salidas</th>
+                            <th>1ª Entrada hoy</th>
+                            <th>Última actividad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaResumen">
+                        <tr class="empty-state"><td colspan="7">
+                            <div class="empty-inner"><div class="state-icon">👥</div>
+                            <p>Carga datos para ver el resumen por empleado.</p></div>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Vista: DIARIA -->
+        <div id="view-diario" class="view-panel" style="display:none">
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Día</th>
+                            <th class="text-center">Empleados</th>
+                            <th class="text-center">Entradas</th>
+                            <th class="text-center">Salidas</th>
+                            <th>Actividad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaDiaria">
+                        <tr class="empty-state"><td colspan="6">
+                            <div class="empty-inner"><div class="state-icon">📅</div>
+                            <p>Carga datos para ver la vista diaria.</p></div>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- /results-section -->
+</div><!-- /container -->
+</main>
+
+<script src="ui-logic.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
