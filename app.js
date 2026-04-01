@@ -567,7 +567,7 @@ function resaltar(texto, busq) {
 function setLoading(loading) {
     if (!loading) return;
     document.getElementById('listaAsistencia').innerHTML = `
-        <tr class="loading-state"><td colspan="5">
+        <tr class="loading-state"><td colspan="6">
             <div class="loading-inner">
                 <div class="spinner"></div>
                 <p>Consultando el checador Hikvision y actualizando…</p>
@@ -577,7 +577,7 @@ function setLoading(loading) {
 function mostrarError(msg) {
     resetStats();
     document.getElementById('listaAsistencia').innerHTML = `
-        <tr class="error-state"><td colspan="5">
+        <tr class="error-state"><td colspan="6">
             <div class="error-inner">
                 <div class="state-icon">❌</div>
                 <p><strong>Error:</strong> ${msg}</p>
@@ -587,7 +587,7 @@ function mostrarError(msg) {
 function mostrarCargando(n) {
     resetStats();
     document.getElementById('listaAsistencia').innerHTML = `
-        <tr class="loading-state"><td colspan="5">
+        <tr class="loading-state"><td colspan="6">
             <div class="loading-inner">
                 <div class="spinner"></div>
                 <p>El historial se está descargando en segundo plano.<br>
@@ -601,5 +601,6 @@ function exportarCSV() {
     if (!eventos.length) return;
     const desde = document.getElementById('txtDesde').value;
     const hasta = document.getElementById('txtHasta').value;
-    descargarCSV(generarCSV(ordenarEventos(eventos)), `asistencia_${desde}_al_${hasta}.csv`);
+    const horaLimite = document.getElementById('horaLimite').value;
+    descargarCSV(generarCSV(ordenarEventos(eventos), horaLimite), `asistencia_${desde}_al_${hasta}.csv`);
 }

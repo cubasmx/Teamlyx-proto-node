@@ -144,11 +144,31 @@ function computarResumenDiario(eventos) {
 }
 
 /** Genera CSV con BOM para compatibilidad con Excel. */
-function generarCSV(eventos) {
-    const enc  = ['ID', 'Nombre', 'Fecha', 'Hora', 'Tipo'].join(',');
+function generarCSV(eventos, horaLimite) {
+    const enc  = ['ID', 'Nombre', 'Fecha', 'Hora', 'Tipo', 'Estado'].join(',');
     const rows = eventos.map(ev => {
         const { fecha, hora } = parsearFechaHora(ev.time);
-        return [ev.employeeNoString, ev.name || '', fecha, hora, ev.minor === EVENTO_ENTRADA ? 'ENTRADA' : 'SALIDA']
+        
+        let tipo = ev.minor === EVENTO_ENTRADA ? 'ENTRADA' : 'SALIDA';
+        let estado = '—';
+        
+        if (ev._falta) {
+            tipo = 'NO CHECÓ';
+            estado = 'FALTA';
+        } else if (ev.minor === EVENTO_ENTRADA) {
+            if (!horaLimite) {
+                estado = 'PRESENTE';
+            } else {
+                const hStr = extraerHora(ev.time);
+                if (hStr <= horaLimite) estado = 'A TIEMPO';
+                else if (hStr < "12:00") estado = 'RETARDO';
+                else estado = 'PRESENTE';
+            }
+        }
+        
+        const horaVal = ev._falta ? '—' : hora;
+        
+        return [ev.employeeNoString, ev.name || '', fecha, horaVal, tipo, estado]
             .map(v => `"${String(v).replace(/"/g, '""')}"`)
             .join(',');
     });
@@ -163,12 +183,30 @@ function descargarCSV(csv, filename) {
     URL.revokeObjectURL(url);
 }
 
+/**
+ * Retorna un arreglo de strings YYYY-MM-DD para todos los días
+ * en el rango [start, end], opcionalmente excluyendo fines de semana.
+ */
+function getDiasEnRango(start, end, excluirFinde = true) {
+    const dias = [];
+    const d    = new Date(start + 'T12:00:00');
+    const fin  = new Date(end   + 'T12:00:00');
+    while (d <= fin) {
+        const dow = d.getDay();
+        if (!excluirFinde || (dow !== 0 && dow !== 6)) {
+            dias.push(d.toISOString().substring(0, 10));
+        }
+        d.setDate(d.getDate() + 1);
+    }
+    return dias;
+}
+
 // ── Exportar para Node.js (tests) ──────────────────
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         EVENTO_ENTRADA, EVENTO_SALIDA,
         formatDateInput, calcularPreset, parsearFechaHora, extraerHora,
         animarContador, computarResumenEmpleados, computarResumenDiario,
-        nombreDia, generarCSV, descargarCSV,
+        nombreDia, generarCSV, descargarCSV, getDiasEnRango,
     };
 }
