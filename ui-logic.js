@@ -3,6 +3,10 @@
 // Funciones de utilidad compartidas entre UI y tests
 // =====================================================
 
+// ── Constantes de eventos Hikvision ISAPI ──────────
+const EVENTO_ENTRADA = 75;
+const EVENTO_SALIDA  = 76;
+
 /** Date → "YYYY-MM-DD" */
 function formatDateInput(date) {
     const y = date.getFullYear();
@@ -100,8 +104,8 @@ function computarResumenEmpleados(eventos) {
         const fecha = ev.time.substring(0, 10);
         if (!emp.dias[fecha]) emp.dias[fecha] = { entradas: [], salidas: [] };
 
-        if (ev.minor === 75) { emp.dias[fecha].entradas.push(ev.time); emp.totalEntradas++; }
-        else                 { emp.dias[fecha].salidas.push(ev.time);  emp.totalSalidas++;  }
+        if (ev.minor === EVENTO_ENTRADA) { emp.dias[fecha].entradas.push(ev.time); emp.totalEntradas++; }
+        else                             { emp.dias[fecha].salidas.push(ev.time);  emp.totalSalidas++;  }
 
         if (!emp.ultimaActividad || ev.time > emp.ultimaActividad) emp.ultimaActividad = ev.time;
     }
@@ -132,7 +136,7 @@ function computarResumenDiario(eventos) {
         const f = ev.time.substring(0, 10);
         if (!mapa[f]) mapa[f] = { fecha: f, empleados: new Set(), entradas: 0, salidas: 0 };
         mapa[f].empleados.add(ev.employeeNoString);
-        ev.minor === 75 ? mapa[f].entradas++ : mapa[f].salidas++;
+        ev.minor === EVENTO_ENTRADA ? mapa[f].entradas++ : mapa[f].salidas++;
     }
     return Object.values(mapa)
         .map(d => ({ fecha: d.fecha, empleados: d.empleados.size, entradas: d.entradas, salidas: d.salidas }))
@@ -144,7 +148,7 @@ function generarCSV(eventos) {
     const enc  = ['ID', 'Nombre', 'Fecha', 'Hora', 'Tipo'].join(',');
     const rows = eventos.map(ev => {
         const { fecha, hora } = parsearFechaHora(ev.time);
-        return [ev.employeeNoString, ev.name || '', fecha, hora, ev.minor === 75 ? 'ENTRADA' : 'SALIDA']
+        return [ev.employeeNoString, ev.name || '', fecha, hora, ev.minor === EVENTO_ENTRADA ? 'ENTRADA' : 'SALIDA']
             .map(v => `"${String(v).replace(/"/g, '""')}"`)
             .join(',');
     });
@@ -162,6 +166,7 @@ function descargarCSV(csv, filename) {
 // ── Exportar para Node.js (tests) ──────────────────
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
+        EVENTO_ENTRADA, EVENTO_SALIDA,
         formatDateInput, calcularPreset, parsearFechaHora, extraerHora,
         animarContador, computarResumenEmpleados, computarResumenDiario,
         nombreDia, generarCSV, descargarCSV,

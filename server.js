@@ -8,6 +8,10 @@ const path    = require('path');
 const app     = express();
 const PORT    = process.env.PORT || 3001;
 
+// ── Constantes de eventos Hikvision ISAPI ──────────
+const EVENTO_ENTRADA = 75;
+const EVENTO_SALIDA  = 76;
+
 app.use(express.static(path.join(__dirname)));
 
 // ══════════════════════════════════════════════════════
@@ -163,8 +167,8 @@ async function cargarCacheInicial() {
 
     try {
         const [entradas, salidas] = await Promise.all([
-            fetchHikvision(75, desde, hasta),
-            fetchHikvision(76, desde, hasta),
+            fetchHikvision(EVENTO_ENTRADA, desde, hasta),
+            fetchHikvision(EVENTO_SALIDA, desde, hasta),
         ]);
 
         cache.eventos  = [...entradas, ...salidas]
@@ -197,8 +201,8 @@ async function actualizarIncremental() {
     }
 
     const [entradas, salidas] = await Promise.all([
-        fetchHikvision(75, isoTS(hace2h), isoTS(ahora)),
-        fetchHikvision(76, isoTS(hace2h), isoTS(ahora)),
+        fetchHikvision(EVENTO_ENTRADA, isoTS(hace2h), isoTS(ahora)),
+        fetchHikvision(EVENTO_SALIDA, isoTS(hace2h), isoTS(ahora)),
     ]);
 
     const antes  = cache.eventos.length;
@@ -264,8 +268,8 @@ app.get('/api/asistencia', async (req, res) => {
 
     res.json({
         total   : eventos.length,
-        entradas: eventos.filter(e => e.minor === 75).length,
-        salidas : eventos.filter(e => e.minor === 76).length,
+        entradas: eventos.filter(e => e.minor === EVENTO_ENTRADA).length,
+        salidas : eventos.filter(e => e.minor === EVENTO_SALIDA).length,
         eventos,
         ultimaSync: cache.ultimaSync,
     });

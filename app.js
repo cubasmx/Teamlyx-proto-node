@@ -9,7 +9,7 @@ let eventosPorPagina = 50;
 let columnaOrden    = 'fecha';
 let ordenAsc        = false;
 let vistaActual     = 'eventos';
-const filtrosActivos = { 75: true, 76: true };
+const filtrosActivos = { [EVENTO_ENTRADA]: true, [EVENTO_SALIDA]: true };
 let pollingInterval  = null;
 
 // ── Boot ───────────────────────────────────────────
@@ -118,13 +118,13 @@ function initEventListeners() {
 
     // Tipo toggles
     document.getElementById('btnEntradas').addEventListener('click', () => {
-        filtrosActivos[75] = !filtrosActivos[75];
-        document.getElementById('btnEntradas').classList.toggle('active', filtrosActivos[75]);
+        filtrosActivos[EVENTO_ENTRADA] = !filtrosActivos[EVENTO_ENTRADA];
+        document.getElementById('btnEntradas').classList.toggle('active', filtrosActivos[EVENTO_ENTRADA]);
         paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
     });
     document.getElementById('btnSalidas').addEventListener('click', () => {
-        filtrosActivos[76] = !filtrosActivos[76];
-        document.getElementById('btnSalidas').classList.toggle('active', filtrosActivos[76]);
+        filtrosActivos[EVENTO_SALIDA] = !filtrosActivos[EVENTO_SALIDA];
+        document.getElementById('btnSalidas').classList.toggle('active', filtrosActivos[EVENTO_SALIDA]);
         paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
     });
 
@@ -297,7 +297,7 @@ function renderTablaEventos(eventos, total) {
     tbody.innerHTML = '';
     slice.forEach((ev, i) => {
         const { fecha, hora } = parsearFechaHora(ev.time);
-        const entrada = ev.minor === 75;
+        const entrada = ev.minor === EVENTO_ENTRADA;
         const tr  = document.createElement('tr');
         tr.style.animationDelay = `${Math.min(i * 15, 350)}ms`;
 
@@ -390,8 +390,8 @@ function renderVistaDiaria(eventos) {
 // ══════════════════════════════════════════════════
 function actualizarStats(eventos) {
     const total    = eventos.length;
-    const entradas = eventos.filter(e => e.minor === 75).length;
-    const salidas  = eventos.filter(e => e.minor === 76).length;
+    const entradas = eventos.filter(e => e.minor === EVENTO_ENTRADA).length;
+    const salidas  = eventos.filter(e => e.minor === EVENTO_SALIDA).length;
     const empUnicos = new Set(eventos.map(e => e.employeeNoString)).size;
 
     animarContador(document.getElementById('statTotal'),     total);
