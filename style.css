@@ -307,6 +307,21 @@ body {
 .event-badge--entry { background:var(--success-bg); color:var(--success); border:1px solid var(--success-b); }
 .event-badge--exit  { background:var(--danger-bg);  color:var(--danger);  border:1px solid var(--danger-b);  }
 
+/* Estado visual: a tiempo, tarde, falta */
+.estado-badge {
+    display:inline-flex; align-items:center; gap:5px; padding:3px 8px;
+    border-radius:6px; font-size:10px; font-weight:700; letter-spacing:.05em; white-space:nowrap;
+}
+.estado--falta { background:var(--danger-bg); color:var(--danger); border:1px solid var(--danger-b); }
+.estado--salida, .estado--falta-tipo { color:var(--text-muted); background:var(--bg-2); border:1px solid var(--border); }
+.estado--presente { color:var(--text-2); background:var(--bg-2); border:1px solid var(--border); }
+.estado--tiempo { background:var(--success-bg); color:var(--success); border:1px solid var(--success-b); }
+.estado--tarde { background:rgba(234,179,8,.1); color:#eab308; border:1px solid rgba(234,179,8,.3); }
+
+/* Faltas visual styling */
+.row-falta { background:rgba(244,63,94,.02); border-left:3px solid var(--danger); }
+.row-falta td { opacity:.85; }
+
 /* Summary view */
 .dias-badge { font-size:13px; font-weight:700; color:var(--text); }
 .num-badge { display:inline-block; min-width:28px; text-align:center; font-weight:600; }

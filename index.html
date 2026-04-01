@@ -102,6 +102,10 @@
                     <label class="filter-label" for="txtHoraHasta">Hora a</label>
                     <input type="time" id="txtHoraHasta" class="filter-input">
                 </div>
+                <div class="filter-group filter-group--sm">
+                    <label class="filter-label" for="horaLimite">Hora límite ⌚</label>
+                    <input type="time" id="horaLimite" class="filter-input" value="09:01">
+                </div>
                 <div class="filter-group filter-group--lg">
                     <label class="filter-label" for="txtEmpleado">Buscar empleado</label>
                     <div class="search-wrap">
@@ -146,6 +150,17 @@
                             <span class="chk-box"></span>
                             <span class="chk-dot chk-dot--entry"></span>
                             Solo 1ª entrada/día
+                        </label>
+                        <label class="chk-label chk-label--falta">
+                            <input type="checkbox" id="chkMostrarFaltas" checked>
+                            <span class="chk-box"></span>
+                            <span class="chk-dot chk-dot--falta"></span>
+                            Mostrar faltas
+                        </label>
+                        <label class="chk-label">
+                            <input type="checkbox" id="chkExcluirFinde" checked>
+                            <span class="chk-box"></span>
+                            Excluir fines de semana
                         </label>
                     </div>
                 </div>
@@ -209,10 +224,11 @@
                             <th class="sortable" data-col="fecha">Fecha <span class="sort-ind">↓</span></th>
                             <th>Hora</th>
                             <th class="sortable" data-col="tipo">Tipo <span class="sort-ind">↕</span></th>
+                            <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody id="listaAsistencia">
-                        <tr class="empty-state"><td colspan="5">
+                        <tr class="empty-state"><td colspan="6">
                             <div class="empty-inner">
                                 <div class="state-icon">📂</div>
                                 <p>Selecciona un rango y presiona <strong>Cargar Asistencia</strong></p>

@@ -14,6 +14,8 @@ const checkboxFiltros = {
     ocultarSinNombre : true,
     ocultarSinId     : true,
     dedupEntradas    : true,   // solo primera entrada por empleado/día
+    mostrarFaltas    : true,   // inyectar filas de falta
+    excluirFinde     : true,   // ignorar sábado/domingo en faltas
 };
 let pollingInterval  = null;
 
@@ -144,6 +146,19 @@ function initEventListeners() {
         checkboxFiltros.dedupEntradas = e.target.checked;
         paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
     });
+    document.getElementById('chkMostrarFaltas').addEventListener('change', e => {
+        checkboxFiltros.mostrarFaltas = e.target.checked;
+        paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
+    });
+    document.getElementById('chkExcluirFinde').addEventListener('change', e => {
+        checkboxFiltros.excluirFinde = e.target.checked;
+        paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
+    });
+
+    // Hora límite (para calcular a tiempo / tarde)
+    document.getElementById('horaLimite').addEventListener('change', () => {
+        if (eventosActuales.length > 0) aplicarFiltrosLocales();
+    });
 
     // Búsqueda en tiempo real
     const txtEmp = document.getElementById('txtEmpleado');
@@ -273,21 +288,50 @@ function obtenerEventosFiltrados() {
 
     // ── Dedup entradas: solo la más temprana por empleado/día ──
     if (checkboxFiltros.dedupEntradas) {
-        // Primer paso: encontrar el time mínimo por (empleado + día)
         const minEntrada = {};
         for (const ev of filtrados) {
             if (ev.minor !== EVENTO_ENTRADA) continue;
             const key = `${ev.employeeNoString}|${ev.time.substring(0, 10)}`;
-            if (!minEntrada[key] || ev.time < minEntrada[key]) {
-                minEntrada[key] = ev.time;
-            }
+            if (!minEntrada[key] || ev.time < minEntrada[key]) minEntrada[key] = ev.time;
         }
-        // Segundo paso: descartar entradas duplicadas
         filtrados = filtrados.filter(ev => {
             if (ev.minor !== EVENTO_ENTRADA) return true;
             const key = `${ev.employeeNoString}|${ev.time.substring(0, 10)}`;
             return ev.time === minEntrada[key];
         });
+    }
+
+    // ── Inyectar filas de FALTA ──
+    if (checkboxFiltros.mostrarFaltas && filtrosActivos[EVENTO_ENTRADA]) {
+        const startDate = document.getElementById('txtDesde').value;
+        const endDate   = document.getElementById('txtHasta').value;
+        if (startDate && endDate) {
+            // Maestro: todos los empleados únicos con nombre e ID válidos
+            const maestro = new Map();
+            for (const ev of eventosActuales) {
+                const eid  = (ev.employeeNoString || '').trim();
+                const enombre = (ev.name || '').trim();
+                if (!eid || eid === 'null' || !enombre || enombre === 'null') continue;
+                if (!maestro.has(eid)) maestro.set(eid, enombre);
+            }
+            // Qué empleados checaron (cualquier entrada en el cache completo, sin filtro de hora)
+            const checados = new Set();
+            for (const ev of eventosActuales) {
+                if (ev.minor !== EVENTO_ENTRADA) continue;
+                const eid = (ev.employeeNoString || '').trim();
+                if (eid && eid !== 'null') checados.add(`${eid}|${ev.time.substring(0, 10)}`);
+            }
+            const dias = getDiasEnRango(startDate, endDate, checkboxFiltros.excluirFinde);
+            for (const [eid, enombre] of maestro) {
+                // Respetar búsqueda de texto
+                if (busq && !eid.toLowerCase().includes(busq) && !enombre.toLowerCase().includes(busq)) continue;
+                for (const dia of dias) {
+                    if (!checados.has(`${eid}|${dia}`)) {
+                        filtrados.push({ _falta: true, employeeNoString: eid, name: enombre, time: `${dia}T00:00:00`, minor: null });
+                    }
+                }
+            }
+        }
     }
 
     return filtrados;
@@ -327,6 +371,21 @@ function renderVista(filtrados, ordenados) {
 }
 
 // ── Vista: EVENTOS ──────────────────────────────
+function getEstadoBadge(ev, horaLimite) {
+    if (ev._falta)               return `<span class="estado-badge estado--falta">❌ FALTA</span>`;
+    if (ev.minor !== EVENTO_ENTRADA) return `<span class="estado-badge estado--salida">—</span>`;
+    if (!horaLimite)             return `<span class="estado-badge estado--presente">✓ PRESENTE</span>`;
+    
+    const horaStr = extraerHora(ev.time);
+    if (horaStr <= horaLimite) {
+        return `<span class="estado-badge estado--tiempo">✅ A TIEMPO</span>`;
+    } else if (horaStr < "12:00") {
+        return `<span class="estado-badge estado--tarde">⏰ RETARDO</span>`;
+    } else {
+        return `<span class="estado-badge estado--presente">✓ PRESENTE</span>`;
+    }
+}
+
 function renderTablaEventos(eventos, total) {
     const tbody = document.getElementById('listaAsistencia');
     const ppc   = eventosPorPagina;
@@ -334,11 +393,12 @@ function renderTablaEventos(eventos, total) {
 
     actualizarPaginacion(total, pages);
 
-    const slice = ppc ? eventos.slice((paginaActual - 1) * ppc, paginaActual * ppc) : eventos;
-    const busq  = document.getElementById('txtEmpleado').value.trim().toLowerCase();
+    const slice      = ppc ? eventos.slice((paginaActual - 1) * ppc, paginaActual * ppc) : eventos;
+    const busq       = document.getElementById('txtEmpleado').value.trim().toLowerCase();
+    const horaLimite = document.getElementById('horaLimite').value;
 
     if (slice.length === 0) {
-        tbody.innerHTML = `<tr class="empty-state"><td colspan="5">
+        tbody.innerHTML = `<tr class="empty-state"><td colspan="6">
             <div class="empty-inner"><div class="state-icon">🔍</div>
             <p>No hay registros con los filtros aplicados.</p></div></td></tr>`;
         return;
@@ -347,20 +407,33 @@ function renderTablaEventos(eventos, total) {
     tbody.innerHTML = '';
     slice.forEach((ev, i) => {
         const { fecha, hora } = parsearFechaHora(ev.time);
-        const entrada = ev.minor === EVENTO_ENTRADA;
-        const tr  = document.createElement('tr');
+        const tr = document.createElement('tr');
         tr.style.animationDelay = `${Math.min(i * 15, 350)}ms`;
 
-        const idHtml     = resaltar(ev.employeeNoString, busq);
+        const idHtml     = resaltar(ev.employeeNoString || '—', busq);
         const nombreHtml = resaltar(ev.name || '—', busq);
+        const estadoHtml = getEstadoBadge(ev, horaLimite);
 
-        tr.innerHTML = `
-            <td><span class="employee-id">${idHtml}</span></td>
-            <td class="employee-name">${nombreHtml}</td>
-            <td style="color:var(--text-2)">${fecha}</td>
-            <td class="hora-cell">${hora}</td>
-            <td><span class="event-badge ${entrada ? 'event-badge--entry' : 'event-badge--exit'}">
-                ● ${entrada ? 'ENTRADA' : 'SALIDA'}</span></td>`;
+        if (ev._falta) {
+            tr.classList.add('row-falta');
+            tr.innerHTML = `
+                <td><span class="employee-id">${idHtml}</span></td>
+                <td class="employee-name">${nombreHtml}</td>
+                <td style="color:var(--text-2)">${fecha}</td>
+                <td class="hora-cell muted">—</td>
+                <td><span class="estado-badge estado--falta-tipo">— NO CHECÓ</span></td>
+                <td>${estadoHtml}</td>`;
+        } else {
+            const entrada = ev.minor === EVENTO_ENTRADA;
+            tr.innerHTML = `
+                <td><span class="employee-id">${idHtml}</span></td>
+                <td class="employee-name">${nombreHtml}</td>
+                <td style="color:var(--text-2)">${fecha}</td>
+                <td class="hora-cell">${hora}</td>
+                <td><span class="event-badge ${entrada ? 'event-badge--entry' : 'event-badge--exit'}">
+                    ● ${entrada ? 'ENTRADA' : 'SALIDA'}</span></td>
+                <td>${estadoHtml}</td>`;
+        }
         tbody.appendChild(tr);
     });
 }
