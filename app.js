@@ -746,7 +746,7 @@ function generarCSV(eventos) {
 function exportCSV() {
     const desde = document.getElementById('txtDesde').value || 'inicio';
     const hasta = document.getElementById('txtHasta').value || 'fin';
-    const eventos = document.getElementById('chkExportarTodos').checked ? eventosActuales : obtenerEventosFiltrados();
+    const eventos = obtenerEventosFiltrados();
     
     descargarCSV(generarCSV(ordenarEventos(eventos)), `asistencia_${desde}_al_${hasta}.csv`);
 }
