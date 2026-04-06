@@ -5,8 +5,51 @@ const https   = require('https');
 const http    = require('http');
 const crypto  = require('crypto');
 const path    = require('path');
+const fs      = require('fs');
+
+// ══════════════════════════════════════════════════════
+//  CONFIGURACIÓN DINÁMICA
+// ══════════════════════════════════════════════════════
+const CONFIG_DIR = path.join(__dirname, 'data');
+const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
+
+if (!fs.existsSync(CONFIG_DIR)) {
+    fs.mkdirSync(CONFIG_DIR);
+}
+
+const DEFAULT_CONFIG = {
+    hikvision_url: process.env.HIKVISION_URL || '',
+    hikvision_user: process.env.HIKVISION_USER || 'admin',
+    hikvision_pass: process.env.HIKVISION_PASS || '',
+    horaEntrada: '08:00',
+    toleranciaEntrada: 15,
+    horaSalida: '18:00',
+    diasLaborales: [1, 2, 3, 4, 5],
+    temaGlobal: ''
+};
+
+function getConfig() {
+    try {
+        if (fs.existsSync(CONFIG_PATH)) {
+            return { ...DEFAULT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) };
+        }
+    } catch(e) {
+        console.error("[Config] Error leyendo config.json", e);
+    }
+    return { ...DEFAULT_CONFIG };
+}
+
+function saveConfig(newConf) {
+    const current = getConfig();
+    const merged = { ...current, ...newConf };
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(merged, null, 2), 'utf8');
+}
+
 const app     = express();
 const PORT    = process.env.PORT || 3001;
+
+// Middlewares necesarios
+app.use(express.json());
 
 // ── Constantes de eventos Hikvision ISAPI ──────────
 const EVENTO_ENTRADA = 75;
@@ -99,7 +142,7 @@ function digestPost(urlStr, body) {
 
             const ch   = parseDigestChallenge(wwwAuth);
             const auth = buildDigestHeader(
-                process.env.HIKVISION_USER, process.env.HIKVISION_PASS, 'POST', uri, ch
+                getConfig().hikvision_user, getConfig().hikvision_pass, 'POST', uri, ch
             );
 
             // Paso 2: petición autenticada
@@ -121,7 +164,11 @@ function digestPost(urlStr, body) {
 //  startTime / endTime → strings ISO completos
 // ══════════════════════════════════════════════════════
 async function fetchHikvision(minor, startTime, endTime) {
-    const url    = `${process.env.HIKVISION_URL}/ISAPI/AccessControl/AcsEvent?format=json`;
+    const config = getConfig();
+    if (!config.hikvision_url) {
+        return Promise.reject(new Error("Hikvision URL no configurada en el panel ni entorno."));
+    }
+    const url    = `${config.hikvision_url}/ISAPI/AccessControl/AcsEvent?format=json`;
     const todos  = [];
     let   pos    = 0;
     const PAGE   = 30;
@@ -275,6 +322,21 @@ app.get('/api/asistencia', async (req, res) => {
     });
 });
 
+// POST /api/config -> Guardar configuración global
+app.post('/api/config', (req, res) => {
+    try {
+        saveConfig(req.body);
+        res.json({ success: true });
+    } catch(e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// GET /api/config -> Leer config actual
+app.get('/api/config', (req, res) => {
+    res.json(getConfig());
+});
+
 // GET /api/empleados → devuelve lista de todos los empleados únicos en el caché
 app.get('/api/empleados', (req, res) => {
     const empleados = new Map();
@@ -299,10 +361,10 @@ if (require.main !== module) {
     app.listen(PORT, () => {
         console.log('');
         console.log('  ╔══════════════════════════════════╗');
-        console.log('  ║   TEAMLYX — Checador  v2.3.0    ║');
+        console.log('  ║   TEAMLYX — Checador  v3.0       ║');
         console.log('  ╚══════════════════════════════════╝');
         console.log(`  Panel:    http://localhost:${PORT}`);
-        console.log(`  Checador: ${process.env.HIKVISION_URL}`);
+        console.log(`  Checador: ${getConfig().hikvision_url || '¡No configurado!'}`);
         console.log('');
     });
 }

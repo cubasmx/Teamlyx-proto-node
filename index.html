@@ -18,8 +18,8 @@
                     <h1 class="brand-name">TEAMLYX</h1>
                     <span class="brand-sub">Panel de Asistencia v3.0</span>
                 </div>
-            </div>
             <div class="header-right">
+                <button class="theme-toggle-btn" id="btnSettings" title="Configuración Global">⚙️</button>
                 <div class="theme-dropdown" id="themeDropdown">
                     <button class="theme-toggle-btn" id="btnThemeToggle" title="Cambiar Tema">🎨</button>
                     <div class="theme-menu" id="themeMenu">
@@ -111,10 +111,6 @@
                 <div class="filter-group filter-group--sm">
                     <label class="filter-label" for="txtHoraHasta">Hora a</label>
                     <input type="time" id="txtHoraHasta" class="filter-input">
-                </div>
-                <div class="filter-group filter-group--sm">
-                    <label class="filter-label" for="horaLimite">Hora límite ⌚</label>
-                    <input type="time" id="horaLimite" class="filter-input" value="09:01">
                 </div>
                 <div class="filter-group filter-group--lg">
                     <label class="filter-label" for="txtEmpleado">Buscar empleado</label>
@@ -299,6 +295,88 @@
         </div>
 
     </div><!-- /results-section -->
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🛠️ Configuración Global</h3>
+                <button class="modal-close" id="btnSettingsClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-grid">
+                    <!-- Sección Dispositivo Hikvision -->
+                    <div class="settings-card">
+                        <h4>Conexión Hikvision</h4>
+                        <div class="filter-group">
+                            <label class="filter-label">URL del Checador</label>
+                            <input type="text" id="cfgHikUrl" class="filter-input" placeholder="https://10.10.x.x">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Usuario</label>
+                            <input type="text" id="cfgHikUser" class="filter-input">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Contraseña</label>
+                            <input type="password" id="cfgHikPass" class="filter-input">
+                        </div>
+                    </div>
+
+                    <!-- Sección Reglas de Asistencia -->
+                    <div class="settings-card">
+                        <h4>Reglas de Asistencia</h4>
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label class="filter-label">Hora Entrada</label>
+                                <input type="time" id="cfgHoraEntrada" class="filter-input" value="08:00">
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Tolerancia (min)</label>
+                                <input type="number" id="cfgTolerancia" class="filter-input" value="15">
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Hora Salida</label>
+                                <input type="time" id="cfgHoraSalida" class="filter-input" value="18:00">
+                            </div>
+                        </div>
+                        <div class="filter-group mt-16">
+                            <label class="filter-label">Días Laborales</label>
+                            <div class="checkboxes" id="cfgDiasLaborales">
+                                <label class="chk-label"><input type="checkbox" value="1"><div class="chk-box"></div> Lun</label>
+                                <label class="chk-label"><input type="checkbox" value="2"><div class="chk-box"></div> Mar</label>
+                                <label class="chk-label"><input type="checkbox" value="3"><div class="chk-box"></div> Mie</label>
+                                <label class="chk-label"><input type="checkbox" value="4"><div class="chk-box"></div> Jue</label>
+                                <label class="chk-label"><input type="checkbox" value="5"><div class="chk-box"></div> Vie</label>
+                                <label class="chk-label"><input type="checkbox" value="6"><div class="chk-box"></div> Sab</label>
+                                <label class="chk-label"><input type="checkbox" value="0"><div class="chk-box"></div> Dom</label>
+                            </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sección Apariencia -->
+                        <div class="settings-card">
+                            <h4>Apariencia</h4>
+                            <div class="filter-group">
+                                <label class="filter-label">Tema Principal</label>
+                                <div class="date-presets" id="cfgThemeSelector">
+                                    <button class="preset-btn cfg-theme-btn" data-set="apple-dark">Apple Dark</button>
+                                    <button class="preset-btn cfg-theme-btn" data-set="minimal-light">Light</button>
+                                    <button class="preset-btn cfg-theme-btn" data-set="monochrome">Monochrome</button>
+                                    <button class="preset-btn cfg-theme-btn" data-set="minimal-color">Minimal Color</button>
+                                    <button class="preset-btn cfg-theme-btn" data-set="colorful">Gradient</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--secondary" id="btnSettingsCancel">Cancelar</button>
+                <button class="btn btn--primary" id="btnSettingsSave">💾 Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
 </div><!-- /container -->
 </main>
 

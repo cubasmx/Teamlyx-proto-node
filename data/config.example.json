@@ -1,0 +1,16 @@
+{
+  "hikvision_url": "https://10.10.x.x",
+  "hikvision_user": "admin",
+  "hikvision_pass": "tu_password",
+  "horaEntrada": "08:00",
+  "toleranciaEntrada": 15,
+  "horaSalida": "18:00",
+  "diasLaborales": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "temaGlobal": "apple-dark"
+}

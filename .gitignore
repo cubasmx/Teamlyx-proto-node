@@ -3,3 +3,4 @@ node_modules/
 *.swp
 *.kate-swp
 asistencia.json
+data/config.json

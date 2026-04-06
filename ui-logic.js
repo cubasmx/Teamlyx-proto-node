@@ -183,17 +183,13 @@ function descargarCSV(csv, filename) {
     URL.revokeObjectURL(url);
 }
 
-/**
- * Retorna un arreglo de strings YYYY-MM-DD para todos los días
- * en el rango [start, end], opcionalmente excluyendo fines de semana.
- */
-function getDiasEnRango(start, end, excluirFinde = true) {
+function getDiasEnRangoConfig(start, end, diasLaboralesValidos = [1,2,3,4,5]) {
     const dias = [];
     const d    = new Date(start + 'T12:00:00');
     const fin  = new Date(end   + 'T12:00:00');
     while (d <= fin) {
         const dow = d.getDay();
-        if (!excluirFinde || (dow !== 0 && dow !== 6)) {
+        if (diasLaboralesValidos.includes(dow)) {
             dias.push(d.toISOString().substring(0, 10));
         }
         d.setDate(d.getDate() + 1);

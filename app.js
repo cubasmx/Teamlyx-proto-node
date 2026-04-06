@@ -3,6 +3,7 @@
 // =====================================================
 
 // ── Estado global ──────────────────────────────────
+let appConfig        = null;
 let eventosActuales  = [];
 let maestroEmpleados = new Map();
 let paginaActual     = 1;
@@ -21,8 +22,8 @@ const checkboxFiltros = {
 let pollingInterval  = null;
 
 // ── Boot ───────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    initTheme();
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchConfigAndInitUI();
     initFechas();
     initPresets();
     initTabs();
@@ -69,40 +70,111 @@ async function actualizarEstadoCache() {
 // ══════════════════════════════════════════════════
 // INICIALIZACIÓN
 // ══════════════════════════════════════════════════
-function initTheme() {
-    const savedTheme = localStorage.getItem('teamlyx-theme') || 'apple-dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    
-    const dropdown = document.getElementById('themeDropdown');
-    const toggleBtn = document.getElementById('btnThemeToggle');
-    const menuButtons = document.querySelectorAll('.theme-menu-btn');
+// ══════════════════════════════════════════════════
+// INICIALIZACIÓN Y CONFIGURACIÓN
+// ══════════════════════════════════════════════════
+async function fetchConfigAndInitUI() {
+    try {
+        const resp = await fetch('/api/config');
+        appConfig = await resp.json();
+    } catch(e) {
+        console.error("Config fetch failed:", e);
+        appConfig = { 
+            temaGlobal: 'apple-dark', horaEntrada: '08:00', toleranciaEntrada: 15, 
+            horaSalida: '18:00', diasLaborales: [1,2,3,4,5], hikvision_url: '', hikvision_user: '', hikvision_pass: ''
+        };
+    }
 
-    // Estado inicial de botones en menu
-    menuButtons.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.set === savedTheme);
+    // Modal Configuración
+    const modal = document.getElementById('settingsModal');
+    const btnOpen = document.getElementById('btnSettings');
+    const btnClose = document.getElementById('btnSettingsClose');
+    const btnCancel = document.getElementById('btnSettingsCancel');
+    const btnSave = document.getElementById('btnSettingsSave');
+    
+    function populateModal() {
+        document.getElementById('cfgHikUrl').value = appConfig.hikvision_url || '';
+        document.getElementById('cfgHikUser').value = appConfig.hikvision_user || '';
+        document.getElementById('cfgHikPass').value = appConfig.hikvision_pass || '';
+        document.getElementById('cfgHoraEntrada').value = appConfig.horaEntrada || '08:00';
+        document.getElementById('cfgTolerancia').value = appConfig.toleranciaEntrada || 15;
+        document.getElementById('cfgHoraSalida').value = appConfig.horaSalida || '18:00';
         
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const theme = btn.dataset.set;
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('teamlyx-theme', theme);
-            
-            menuButtons.forEach(b => b.classList.remove('active'));
+        const checks = document.querySelectorAll('#cfgDiasLaborales input');
+        checks.forEach(chk => { chk.checked = appConfig.diasLaborales.includes(parseInt(chk.value)); });
+        
+        document.querySelectorAll('.cfg-theme-btn').forEach(btn => btn.classList.remove('active'));
+        const activeThm = document.querySelector(`.cfg-theme-btn[data-set="${appConfig.temaGlobal}"]`);
+        if (activeThm) activeThm.classList.add('active');
+    }
+
+    if (btnOpen) btnOpen.addEventListener('click', () => { populateModal(); modal.classList.add('open'); });
+    if (btnClose) btnClose.addEventListener('click', () => modal.classList.remove('open'));
+    if (btnCancel) btnCancel.addEventListener('click', () => modal.classList.remove('open'));
+
+    document.querySelectorAll('.cfg-theme-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.cfg-theme-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            dropdown.classList.remove('open');
+            setTheme(btn.dataset.set);
         });
     });
 
-    toggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle('open');
-    });
+    if (btnSave) {
+        btnSave.addEventListener('click', async () => {
+            const dias = Array.from(document.querySelectorAll('#cfgDiasLaborales input:checked')).map(i => parseInt(i.value));
+            const themeBtn = document.querySelector('.cfg-theme-btn.active');
+            const newConf = {
+                hikvision_url: document.getElementById('cfgHikUrl').value,
+                hikvision_user: document.getElementById('cfgHikUser').value,
+                hikvision_pass: document.getElementById('cfgHikPass').value,
+                horaEntrada: document.getElementById('cfgHoraEntrada').value,
+                toleranciaEntrada: parseInt(document.getElementById('cfgTolerancia').value || 0),
+                horaSalida: document.getElementById('cfgHoraSalida').value,
+                diasLaborales: dias,
+                temaGlobal: themeBtn ? themeBtn.dataset.set : 'apple-dark'
+            };
 
-    document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target)) {
-            dropdown.classList.remove('open');
-        }
-    });
+            btnSave.disabled = true; btnSave.innerHTML = "Guardando...";
+            await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newConf) });
+            appConfig = { ...appConfig, ...newConf };
+            
+            if (eventosActuales.length > 0) aplicarFiltrosLocales();
+            
+            btnSave.disabled = false; btnSave.innerHTML = "💾 Guardar Cambios";
+            modal.classList.remove('open');
+        });
+    }
+
+    // Inicializar Tema Backend o LocalStorage
+    if (!appConfig.temaGlobal) { appConfig.temaGlobal = localStorage.getItem('teamlyx-theme') || 'apple-dark'; }
+    setTheme(appConfig.temaGlobal);
+
+    const dropdown = document.getElementById('themeDropdown');
+    const toggleBtn = document.getElementById('btnThemeToggle');
+    const menuButtons = document.querySelectorAll('.theme-menu-btn');
+    
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('teamlyx-theme', theme);
+        if (menuButtons) menuButtons.forEach(b => b.classList.toggle('active', b.dataset.set === theme));
+    }
+
+    if (menuButtons) {
+        menuButtons.forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const theme = btn.dataset.set;
+                setTheme(theme);
+                if (dropdown) dropdown.classList.remove('open');
+                appConfig.temaGlobal = theme;
+                await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(appConfig) });
+            });
+        });
+    }
+
+    if (toggleBtn) toggleBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('open'); });
+    document.addEventListener('click', (e) => { if (dropdown && !dropdown.contains(e.target)) dropdown.classList.remove('open'); });
 }
 
 function initFechas() {
@@ -159,7 +231,7 @@ function initEventListeners() {
     document.getElementById('btnCargar').addEventListener('click', cargarAsistencia);
 
     // Exportar CSV
-    document.getElementById('btnExportar').addEventListener('click', exportarCSV);
+    document.getElementById('btnExportar').addEventListener('click', exportCSV);
 
     // Checkboxes de tipo (Entradas / Salidas)
     document.getElementById('chkEntradas').addEventListener('change', e => {
@@ -191,11 +263,6 @@ function initEventListeners() {
     document.getElementById('chkExcluirFinde').addEventListener('change', e => {
         checkboxFiltros.excluirFinde = e.target.checked;
         paginaActual = 1; if (eventosActuales.length > 0) aplicarFiltrosLocales();
-    });
-
-    // Hora límite (para calcular a tiempo / tarde)
-    document.getElementById('horaLimite').addEventListener('change', () => {
-        if (eventosActuales.length > 0) aplicarFiltrosLocales();
     });
 
     // Búsqueda en tiempo real
@@ -361,7 +428,8 @@ function obtenerEventosFiltrados() {
                 const eid = (ev.employeeNoString || '').trim();
                 if (eid && eid !== 'null') checados.add(`${eid}|${ev.time.substring(0, 10)}`);
             }
-            const dias = getDiasEnRango(startDate, endDate, checkboxFiltros.excluirFinde);
+            // Utilizar appConfig.diasLaborales en lugar del simple finde
+            const dias = getDiasEnRangoConfig(startDate, endDate, appConfig.diasLaborales);
             for (const [eid, enombre] of maestroEmpleados) {
                 // Respetar búsqueda de texto
                 if (busq && !eid.toLowerCase().includes(busq) && !enombre.toLowerCase().includes(busq)) continue;
@@ -411,23 +479,36 @@ function renderVista(filtrados, ordenados) {
 }
 
 // ── Vista: EVENTOS ──────────────────────────────
-function getEstadoBadge(ev, horaLimite) {
-    if (ev._falta)               return `<span class="estado-badge estado--falta">❌ FALTA</span>`;
-    if (ev.minor !== EVENTO_ENTRADA) return `<span class="estado-badge estado--salida">—</span>`;
+function getHoraLimiteConfig() {
+    if (!appConfig || !appConfig.horaEntrada) return "08:15"; // fallback seguro
+    const [h, m] = appConfig.horaEntrada.split(':').map(Number);
+    const tol = appConfig.toleranciaEntrada || 0;
+    const date = new Date(2000, 1, 1, h, m + tol, 0);
+    const rh = date.getHours().toString().padStart(2, '0');
+    const rm = date.getMinutes().toString().padStart(2, '0');
+    return `${rh}:${rm}`;
+}
+
+function getEstadoBadge(ev) {
+    if (ev._falta) return `<span class="estado-badge estado--falta">❌ FALTA</span>`;
+    
+    const horaLimite = getHoraLimiteConfig();
+    
+    if (ev.minor === EVENTO_SALIDA)  return `<span class="estado-badge estado--salida">🏃 SALIDA</span>`;
+    if (ev.minor !== EVENTO_ENTRADA) return `<span class="estado-badge estado--falta-tipo">⚠️ TIPO ${ev.minor}</span>`;
+
+    const horaStr = ev.time.substring(11, 16);
     if (!horaLimite)             return `<span class="estado-badge estado--presente">✓ PRESENTE</span>`;
     
-    const horaStr = extraerHora(ev.time);
     if (horaStr <= horaLimite) {
         return `<span class="estado-badge estado--tiempo">✅ A TIEMPO</span>`;
-    } else if (horaStr < "12:00") {
-        return `<span class="estado-badge estado--tarde">⏰ RETARDO</span>`;
     } else {
-        return `<span class="estado-badge estado--presente">✓ PRESENTE</span>`;
+        return `<span class="estado-badge estado--tarde">⏰ RETARDO</span>`;
     }
 }
 
 function renderTablaEventos(eventos, total) {
-    const tbody = document.getElementById('listaAsistencia');
+    const tbody = document.querySelector('#listaAsistencia');
     const ppc   = eventosPorPagina;
     const pages = ppc ? Math.ceil(total / ppc) : 1;
 
@@ -435,7 +516,6 @@ function renderTablaEventos(eventos, total) {
 
     const slice      = ppc ? eventos.slice((paginaActual - 1) * ppc, paginaActual * ppc) : eventos;
     const busq       = document.getElementById('txtEmpleado').value.trim().toLowerCase();
-    const horaLimite = document.getElementById('horaLimite').value;
 
     if (slice.length === 0) {
         tbody.innerHTML = `<tr class="empty-state"><td colspan="6">
@@ -452,7 +532,7 @@ function renderTablaEventos(eventos, total) {
 
         const idHtml     = resaltar(ev.employeeNoString || '—', busq);
         const nombreHtml = resaltar(ev.name || '—', busq);
-        const estadoHtml = getEstadoBadge(ev, horaLimite);
+        const estadoHtml = getEstadoBadge(ev);
 
         if (ev._falta) {
             tr.classList.add('row-falta');
@@ -636,11 +716,34 @@ function mostrarCargando(n) {
             </div></td></tr>`;
 }
 
-function exportarCSV() {
-    const eventos = obtenerEventosFiltrados();
-    if (!eventos.length) return;
-    const desde = document.getElementById('txtDesde').value;
-    const hasta = document.getElementById('txtHasta').value;
-    const horaLimite = document.getElementById('horaLimite').value;
-    descargarCSV(generarCSV(ordenarEventos(eventos), horaLimite), `asistencia_${desde}_al_${hasta}.csv`);
+// Exportación Básica a CSV
+function generarCSV(eventos) {
+    const headers = ['Fecha Evento', 'Hora', 'ID Empleado', 'Nombre', 'Tipo Evento', 'Estado'];
+    const filas = eventos.map(ev => {
+        const d = ev.time.substring(0, 10);
+        const h = ev.time.substring(11, 19);
+        const empId = ev.employeeNoString || 'Desconocido';
+        const empName = ev.name || 'Desconocido';
+        const typeStr = ev.minor === EVENTO_ENTRADA ? 'Entrada' : (ev.minor === EVENTO_SALIDA ? 'Salida' : 'Otro');
+        
+        // Estado texto limpios para CSV
+        let estadoStr = '';
+        if (ev._falta) estadoStr = 'FALTA';
+        else if (ev.minor === EVENTO_SALIDA) estadoStr = 'SALIDA';
+        else {
+            const hL = getHoraLimiteConfig();
+            estadoStr = (ev.time.substring(11,16) <= hL) ? 'A TIEMPO' : 'RETARDO';
+        }
+
+        return [d, h, empId, empName, typeStr, estadoStr].join(',');
+    });
+    return [headers.join(','), ...filas].join('\n');
+}
+
+function exportCSV() {
+    const desde = document.getElementById('txtDesde').value || 'inicio';
+    const hasta = document.getElementById('txtHasta').value || 'fin';
+    const eventos = document.getElementById('chkExportarTodos').checked ? eventosActuales : obtenerEventosFiltrados();
+    
+    descargarCSV(generarCSV(ordenarEventos(eventos)), `asistencia_${desde}_al_${hasta}.csv`);
 }
