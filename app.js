@@ -146,18 +146,21 @@ async function fetchConfigAndInitUI() {
         });
     }
 
-    // Inicializar Tema Backend o LocalStorage
-    if (!appConfig.temaGlobal) { appConfig.temaGlobal = localStorage.getItem('teamlyx-theme') || 'apple-dark'; }
-    setTheme(appConfig.temaGlobal);
-
+    // Navbar theme dropdown elements
     const dropdown = document.getElementById('themeDropdown');
     const toggleBtn = document.getElementById('btnThemeToggle');
     const menuButtons = document.querySelectorAll('.theme-menu-btn');
+
+    // Inicializar Tema Backend o LocalStorage
+    if (!appConfig.temaGlobal) { appConfig.temaGlobal = localStorage.getItem('teamlyx-theme') || 'apple-dark'; }
+    setTheme(appConfig.temaGlobal);
     
     function setTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('teamlyx-theme', theme);
-        if (menuButtons) menuButtons.forEach(b => b.classList.toggle('active', b.dataset.set === theme));
+        if (menuButtons && menuButtons.length) {
+            menuButtons.forEach(b => b.classList.toggle('active', b.dataset.set === theme));
+        }
     }
 
     if (menuButtons) {
