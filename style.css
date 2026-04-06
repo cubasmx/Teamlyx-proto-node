@@ -523,14 +523,48 @@ body {
 
 .mt-16 { margin-top: 16px; }
 
-/* ── Responsive ── */
+/* ── Responsive Mobile-First ── */
 @media (max-width: 900px) {
-    .stats-row { grid-template-columns:repeat(2,1fr); }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 640px) {
-    .stats-row { grid-template-columns:1fr; }
-    .filter-row { flex-direction:column; }
-    .filter-row--bottom { flex-direction:column; align-items:flex-start; }
-    .action-buttons, .sort-controls { width:100%; }
+@media (max-width: 768px) {
+    .container { padding: 16px 12px; }
+    .header-main { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .header-right { width: 100%; justify-content: flex-end; }
+    
+    .stats-row { grid-template-columns: 1fr; }
+    .filter-row { flex-direction: column; width: 100%; }
+    .filter-row--bottom { flex-direction: column; align-items: stretch; }
+    .action-buttons, .sort-controls { width:100%; justify-content: space-between; }
     .btn { flex:1; justify-content:center; }
+    
+    .filter-group { width: 100%; }
+    .filter-input { width: 100%; }
+    
+    /* Table to Cards Pattern */
+    .data-table thead { display: none; }
+    .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; box-sizing: border-box; }
+    .data-table tr { 
+        margin-bottom: 20px; border: 1px solid var(--border); 
+        border-radius: var(--r-md); padding: 12px; position: relative; 
+        background: var(--bg-card); display: flex; flex-direction: column; gap: 8px;
+    }
+    .data-table td { 
+        display: flex; justify-content: space-between; align-items: center; 
+        padding: 4px 0; border-bottom: 1px dashed var(--border); text-align: right;
+    }
+    .data-table td:last-child { border-bottom: none; }
+    
+    .data-table td::before { 
+        content: attr(data-label); font-weight: 500; 
+        color: var(--text-muted); font-size: 11px; 
+        text-transform: uppercase; margin-right: 16px; text-align: left; 
+    }
+    .activity-bar { width: 120px; }
+    
+    .modal-content { border-radius: var(--r-md); margin: 0; width: calc(100% - 24px); max-height: calc(100vh - 24px); }
+    .modal-header { padding: 16px; }
+    .modal-body { padding: 16px; }
+    .modal-footer { padding: 16px; flex-direction: column; }
+    .modal-footer .btn { width: 100%; }
 }

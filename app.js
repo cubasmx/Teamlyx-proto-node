@@ -540,22 +540,22 @@ function renderTablaEventos(eventos, total) {
         if (ev._falta) {
             tr.classList.add('row-falta');
             tr.innerHTML = `
-                <td><span class="employee-id">${idHtml}</span></td>
-                <td class="employee-name">${nombreHtml}</td>
-                <td style="color:var(--text-2)">${fecha}</td>
-                <td class="hora-cell muted">—</td>
-                <td><span class="estado-badge estado--falta-tipo">— NO CHECÓ</span></td>
-                <td>${estadoHtml}</td>`;
+                <td data-label="ID"><span class="employee-id">${idHtml}</span></td>
+                <td data-label="Nombre" class="employee-name">${nombreHtml}</td>
+                <td data-label="Fecha" style="color:var(--text-2)">${fecha}</td>
+                <td data-label="Hora" class="hora-cell muted">—</td>
+                <td data-label="Tipo"><span class="estado-badge estado--falta-tipo">— NO CHECÓ</span></td>
+                <td data-label="Estado">${estadoHtml}</td>`;
         } else {
             const entrada = ev.minor === EVENTO_ENTRADA;
             tr.innerHTML = `
-                <td><span class="employee-id">${idHtml}</span></td>
-                <td class="employee-name">${nombreHtml}</td>
-                <td style="color:var(--text-2)">${fecha}</td>
-                <td class="hora-cell">${hora}</td>
-                <td><span class="event-badge ${entrada ? 'event-badge--entry' : 'event-badge--exit'}">
+                <td data-label="ID"><span class="employee-id">${idHtml}</span></td>
+                <td data-label="Nombre" class="employee-name">${nombreHtml}</td>
+                <td data-label="Fecha" style="color:var(--text-2)">${fecha}</td>
+                <td data-label="Hora" class="hora-cell">${hora}</td>
+                <td data-label="Tipo"><span class="event-badge ${entrada ? 'event-badge--entry' : 'event-badge--exit'}">
                     ● ${entrada ? 'ENTRADA' : 'SALIDA'}</span></td>
-                <td>${estadoHtml}</td>`;
+                <td data-label="Estado">${estadoHtml}</td>`;
         }
         tbody.appendChild(tr);
     });
@@ -582,13 +582,13 @@ function renderResumenEmpleados(eventos) {
         const tr = document.createElement('tr');
         tr.style.animationDelay = `${Math.min(i * 12, 300)}ms`;
         tr.innerHTML = `
-            <td><span class="employee-id">${emp.id}</span></td>
-            <td class="employee-name">${emp.nombre}</td>
-            <td class="text-center"><span class="dias-badge">${emp.diasPresente}</span></td>
-            <td class="text-center"><span class="num-badge num-badge--entry">${emp.totalEntradas}</span></td>
-            <td class="text-center"><span class="num-badge num-badge--exit">${emp.totalSalidas}</span></td>
-            <td class="hora-cell ${horaEnt ? '' : 'muted'}">${horaEnt || '—'}</td>
-            <td class="hora-cell">${ultima.fecha !== '—' ? ultima.hora + ' · ' + ultima.fecha : '—'}</td>`;
+            <td data-label="ID"><span class="employee-id">${emp.id}</span></td>
+            <td data-label="Nombre" class="employee-name">${emp.nombre}</td>
+            <td data-label="Días" class="text-center"><span class="dias-badge">${emp.diasPresente}</span></td>
+            <td data-label="Entradas" class="text-center"><span class="num-badge num-badge--entry">${emp.totalEntradas}</span></td>
+            <td data-label="Salidas" class="text-center"><span class="num-badge num-badge--exit">${emp.totalSalidas}</span></td>
+            <td data-label="1ra Entrada" class="hora-cell ${horaEnt ? '' : 'muted'}">${horaEnt || '—'}</td>
+            <td data-label="Última Actividad" class="hora-cell">${ultima.fecha !== '—' ? ultima.hora + ' · ' + ultima.fecha : '—'}</td>`;
         tbody.appendChild(tr);
     });
 }
@@ -616,12 +616,12 @@ function renderVistaDiaria(eventos) {
         const tr  = document.createElement('tr');
         tr.style.animationDelay = `${Math.min(i * 15, 350)}ms`;
         tr.innerHTML = `
-            <td style="color:var(--text-2)">${fecha}</td>
-            <td><span class="day-badge">${dia}</span></td>
-            <td class="text-center"><strong>${d.empleados}</strong></td>
-            <td class="text-center num-badge--entry"><strong>${d.entradas}</strong></td>
-            <td class="text-center num-badge--exit"><strong>${d.salidas}</strong></td>
-            <td>
+            <td data-label="Fecha" style="color:var(--text-2)">${fecha}</td>
+            <td data-label="Día"><span class="day-badge">${dia}</span></td>
+            <td data-label="Empleados" class="text-center"><strong>${d.empleados}</strong></td>
+            <td data-label="Entradas" class="text-center num-badge--entry"><strong>${d.entradas}</strong></td>
+            <td data-label="Salidas" class="text-center num-badge--exit"><strong>${d.salidas}</strong></td>
+            <td data-label="Actividad">
                 <div class="activity-bar">
                     <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
                     <span class="bar-pct">${pct}%</span>
