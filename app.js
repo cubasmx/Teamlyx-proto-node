@@ -4,6 +4,7 @@
 
 // ── Estado global ──────────────────────────────────
 let eventosActuales  = [];
+let maestroEmpleados = new Map();
 let paginaActual     = 1;
 let eventosPorPagina = 50;
 let columnaOrden     = 'fecha';
@@ -21,6 +22,7 @@ let pollingInterval  = null;
 
 // ── Boot ───────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     initFechas();
     initPresets();
     initTabs();
@@ -67,6 +69,42 @@ async function actualizarEstadoCache() {
 // ══════════════════════════════════════════════════
 // INICIALIZACIÓN
 // ══════════════════════════════════════════════════
+function initTheme() {
+    const savedTheme = localStorage.getItem('teamlyx-theme') || 'apple-dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    
+    const dropdown = document.getElementById('themeDropdown');
+    const toggleBtn = document.getElementById('btnThemeToggle');
+    const menuButtons = document.querySelectorAll('.theme-menu-btn');
+
+    // Estado inicial de botones en menu
+    menuButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.set === savedTheme);
+        
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const theme = btn.dataset.set;
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('teamlyx-theme', theme);
+            
+            menuButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            dropdown.classList.remove('open');
+        });
+    });
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target)) {
+            dropdown.classList.remove('open');
+        }
+    });
+}
+
 function initFechas() {
     const hoy  = new Date();
     const prim = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
@@ -222,13 +260,21 @@ async function cargarAsistencia() {
     resetStats();
 
     try {
-        const resp = await fetch(`/api/asistencia?${new URLSearchParams({ startDate, endDate })}`);
-        const data = await resp.json();
+        const [respAsistencia, respEmpleados] = await Promise.all([
+            fetch(`/api/asistencia?${new URLSearchParams({ startDate, endDate })}`),
+            fetch('/api/empleados')
+        ]);
+        const data = await respAsistencia.json();
+        const dataEmp = await respEmpleados.json();
 
-        if (resp.status === 202 || data.cargando) { mostrarCargando(data.total || 0); return; }
-        if (!resp.ok) throw new Error(data.error || `Error ${resp.status}`);
+        if (respAsistencia.status === 202 || data.cargando) { mostrarCargando(data.total || 0); return; }
+        if (!respAsistencia.ok) throw new Error(data.error || `Error ${respAsistencia.status}`);
 
         eventosActuales = data.eventos || [];
+        maestroEmpleados.clear();
+        if (Array.isArray(dataEmp)) {
+            dataEmp.forEach(emp => maestroEmpleados.set(emp.id, emp.nombre));
+        }
         paginaActual    = 1;
 
         // Sync timestamp en banner
@@ -306,14 +352,8 @@ function obtenerEventosFiltrados() {
         const startDate = document.getElementById('txtDesde').value;
         const endDate   = document.getElementById('txtHasta').value;
         if (startDate && endDate) {
-            // Maestro: todos los empleados únicos con nombre e ID válidos
-            const maestro = new Map();
-            for (const ev of eventosActuales) {
-                const eid  = (ev.employeeNoString || '').trim();
-                const enombre = (ev.name || '').trim();
-                if (!eid || eid === 'null' || !enombre || enombre === 'null') continue;
-                if (!maestro.has(eid)) maestro.set(eid, enombre);
-            }
+            // Maestro ya precargado desde /api/empleados -> maestroEmpleados
+
             // Qué empleados checaron (cualquier entrada en el cache completo, sin filtro de hora)
             const checados = new Set();
             for (const ev of eventosActuales) {
@@ -322,7 +362,7 @@ function obtenerEventosFiltrados() {
                 if (eid && eid !== 'null') checados.add(`${eid}|${ev.time.substring(0, 10)}`);
             }
             const dias = getDiasEnRango(startDate, endDate, checkboxFiltros.excluirFinde);
-            for (const [eid, enombre] of maestro) {
+            for (const [eid, enombre] of maestroEmpleados) {
                 // Respetar búsqueda de texto
                 if (busq && !eid.toLowerCase().includes(busq) && !enombre.toLowerCase().includes(busq)) continue;
                 for (const dia of dias) {

@@ -275,6 +275,20 @@ app.get('/api/asistencia', async (req, res) => {
     });
 });
 
+// GET /api/empleados → devuelve lista de todos los empleados únicos en el caché
+app.get('/api/empleados', (req, res) => {
+    const empleados = new Map();
+    for (const ev of cache.eventos) {
+        const id = (ev.employeeNoString || '').trim();
+        const nom = (ev.name || '').trim();
+        if (id && id !== 'null' && nom && nom !== 'null') {
+            if (!empleados.has(id)) empleados.set(id, nom);
+        }
+    }
+    const arr = Array.from(empleados.entries()).map(([id, nombre]) => ({ id, nombre }));
+    res.json(arr);
+});
+
 // ══════════════════════════════════════════════════════
 //  INICIO
 // ══════════════════════════════════════════════════════
